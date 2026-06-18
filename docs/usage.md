@@ -25,7 +25,6 @@ go install github.com/libin18/agent-insight/cmd/agent-insight@latest
 ```bash
 agent-insight version
 # 输出: agent-insight v0.1.0 (go1.22.0, darwin/arm64, commit: abc1234)
-# go install 时通过 debug.ReadBuildInfo() 的 VCS 数据自动获取 commit
 ```
 
 ## 快速开始
@@ -311,7 +310,6 @@ agent-insight config set logging.level debug
 ```bash
 agent-insight version
 # 输出: agent-insight v0.1.0 (go1.22.0, darwin/arm64, commit: abc1234)
-# go install 时自动从 VCS 读取 commit，make build 通过 ldflags 注入
 ```
 
 ## 配置详解

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,22 +28,6 @@ var (
 	buildVersion = config.Version
 	buildCommit  = "unknown"
 )
-
-func init() {
-	if buildCommit == "unknown" {
-		if info, ok := debug.ReadBuildInfo(); ok {
-			for _, s := range info.Settings {
-				if s.Key == "vcs.revision" {
-					buildCommit = s.Value
-					if len(s.Value) > 7 {
-						buildCommit = s.Value[:7]
-					}
-					break
-				}
-			}
-		}
-	}
-}
 
 func main() {
 	cfg, err := config.Load()
