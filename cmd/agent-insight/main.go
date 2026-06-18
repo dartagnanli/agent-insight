@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,6 +29,22 @@ var (
 	buildVersion = config.Version
 	buildCommit  = "unknown"
 )
+
+func init() {
+	if buildCommit == "unknown" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			for _, s := range info.Settings {
+				if s.Key == "vcs.revision" {
+					buildCommit = s.Value
+					if len(s.Value) > 7 {
+						buildCommit = s.Value[:7]
+					}
+					break
+				}
+			}
+		}
+	}
+}
 
 func main() {
 	cfg, err := config.Load()
@@ -95,7 +113,8 @@ func main() {
 			since, _ := cmd.Flags().GetString("since")
 			limit, _ := cmd.Flags().GetInt("limit")
 			detail, _ := cmd.Flags().GetString("detail")
-			runSessions(cfg, sortField, order, since, limit, detail)
+			project, _ := cmd.Flags().GetString("project")
+			runSessions(cfg, sortField, order, since, limit, detail, project)
 		},
 	}
 	sessionsCmd.Flags().String("sort", "started_at", "排序字段: started_at|events|duration|blocked")
@@ -103,6 +122,7 @@ func main() {
 	sessionsCmd.Flags().String("since", "24h", "时间过滤: 1h|6h|24h|7d|30d")
 	sessionsCmd.Flags().Int("limit", 50, "最大条数")
 	sessionsCmd.Flags().String("detail", "", "显示特定 session 的详细聚合信息")
+	sessionsCmd.Flags().String("project", "", "按项目路径过滤（支持相对路径）")
 	rootCmd.AddCommand(sessionsCmd)
 
 	// --- stats ---
@@ -114,13 +134,15 @@ func main() {
 			tool, _ := cmd.Flags().GetString("tool")
 			evt, _ := cmd.Flags().GetString("event")
 			format, _ := cmd.Flags().GetString("format")
-			runStats(cfg, since, tool, evt, format)
+			project, _ := cmd.Flags().GetString("project")
+			runStats(cfg, since, tool, evt, format, project)
 		},
 	}
 	statsCmd.Flags().String("since", "24h", "时间范围: 1h|6h|24h|7d|30d")
 	statsCmd.Flags().String("tool", "", "按工具过滤")
 	statsCmd.Flags().String("event", "", "按事件类型过滤")
 	statsCmd.Flags().String("format", "text", "输出格式: text|json")
+	statsCmd.Flags().String("project", "", "按项目路径过滤（支持相对路径）")
 	rootCmd.AddCommand(statsCmd)
 
 	// --- config ---
@@ -358,7 +380,7 @@ func printTraceText(t *event.Trace) {
 
 // ======== sessions ========
 
-func runSessions(cfg *config.Config, sortField, order, since string, limit int, detail string) {
+func runSessions(cfg *config.Config, sortField, order, since string, limit int, detail string, project string) {
 	ctx := context.Background()
 	s, err := openStorage(ctx, cfg)
 	if err != nil {
@@ -390,10 +412,18 @@ func runSessions(cfg *config.Config, sortField, order, since string, limit int, 
 	}
 
 	filter := storage.SessionFilter{
-		Since:     &sinceTime,
-		SortBy:    sortBy,
-		SortOrder: order,
-		Limit:     limit,
+		Since:       &sinceTime,
+		SortBy:      sortBy,
+		SortOrder:   order,
+		Limit:       limit,
+	}
+	if project != "" {
+		abs, err := filepath.Abs(project)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid --project path: %v\n", err)
+			os.Exit(1)
+		}
+		filter.ProjectPath = &abs
 	}
 
 	summaries, err := s.ListSessions(ctx, filter)
@@ -464,7 +494,7 @@ func runSessionDetail(ctx context.Context, s *storage.SQLite, sessionID string) 
 
 // ======== stats ========
 
-func runStats(cfg *config.Config, since, tool, evt, format string) {
+func runStats(cfg *config.Config, since, tool, evt, format, project string) {
 	ctx := context.Background()
 	s, err := openStorage(ctx, cfg)
 	if err != nil {
@@ -486,6 +516,14 @@ func runStats(cfg *config.Config, since, tool, evt, format string) {
 	}
 	if evt != "" {
 		filter.EventType = &evt
+	}
+	if project != "" {
+		abs, err := filepath.Abs(project)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid --project path: %v\n", err)
+			os.Exit(1)
+		}
+		filter.Cwd = &abs
 	}
 
 	events, err := s.QueryEvents(ctx, filter)
