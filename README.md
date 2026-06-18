@@ -31,7 +31,9 @@ agent-insight init
 
 # 3. 查看数据
 agent-insight stats
+agent-insight stats --project .
 agent-insight sessions
+agent-insight sessions --project .
 agent-insight trace <session_id>
 ```
 
@@ -41,8 +43,8 @@ agent-insight trace <session_id>
 |------|------|
 | `agent-insight init` | 初始化 hook 配置 |
 | `agent-insight collect --event <type>` | 采集事件（自动调用） |
-| `agent-insight stats` | 统计摘要 |
-| `agent-insight sessions` | 列出会话 |
+| `agent-insight stats` | 统计摘要（支持 `--project`） |
+| `agent-insight sessions` | 列出会话（支持 `--project`） |
 | `agent-insight trace <id>` | 查看调用链 |
 | `agent-insight config` | 管理配置 |
 | `agent-insight version` | 版本信息 |
