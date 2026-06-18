@@ -140,11 +140,11 @@ func DBPath(cfg *Config) (string, error) {
 	if cfg.Storage.Path != "" {
 		return cfg.Storage.Path, nil
 	}
-	cwd, err := os.Getwd()
+	dir, err := ConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("get cwd: %w", err)
+		return "", fmt.Errorf("get config dir: %w", err)
 	}
-	return filepath.Join(cwd, ".agent-insight", "insight.db"), nil
+	return filepath.Join(dir, "insight.db"), nil
 }
 
 // NewViper 创建配置好的 viper 实例

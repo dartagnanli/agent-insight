@@ -23,7 +23,7 @@ type SQLite struct {
 
 // NewSQLite 创建 SQLite 存储实例
 func NewSQLite(ctx context.Context, cfg config.StorageConfig) (*SQLite, error) {
-	dbPath := resolveDBPath(cfg)
+	dbPath := cfg.Path
 	if dbPath == "" {
 		return nil, fmt.Errorf("db path must not be empty")
 	}
@@ -66,26 +66,12 @@ func NewStorage(ctx context.Context, cfg config.StorageConfig) (Storage, error) 
 	}
 }
 
-func resolveDBPath(cfg config.StorageConfig) string {
-	if p := os.Getenv("AGENT_INSIGHT_DB_PATH"); p != "" {
-		return p
-	}
-	if cfg.Path != "" {
-		return cfg.Path
-	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(cwd, ".agent-insight", "insight.db")
-}
-
 func (s *SQLite) Init(ctx context.Context) error {
 	// 检测数据库完整性
 	var ok string
 	err := s.db.QueryRowContext(ctx, "PRAGMA integrity_check").Scan(&ok)
 	if err != nil || ok != "ok" {
-		dbPath := resolveDBPath(s.cfg)
+		dbPath := s.cfg.Path
 		if dbPath != "" {
 			backupPath := dbPath + ".corrupt." + time.Now().Format("20060102-150405")
 			if renameErr := os.Rename(dbPath, backupPath); renameErr == nil {
@@ -166,6 +152,10 @@ func (s *SQLite) QueryEvents(ctx context.Context, f EventFilter) ([]*event.HookE
 	if f.Blocked != nil {
 		q += " AND blocked = ?"
 		args = append(args, boolToInt(*f.Blocked))
+	}
+	if f.Cwd != nil {
+		q += " AND cwd = ?"
+		args = append(args, *f.Cwd)
 	}
 	if f.Since != nil {
 		q += " AND created_at >= ?"

@@ -63,5 +63,10 @@ CREATE TABLE IF NOT EXISTS session_stats (
 INSERT INTO schema_version VALUES (1);
 `
 
+var schemaV2 = `
+CREATE INDEX IF NOT EXISTS idx_events_cwd ON hook_events(cwd);
+INSERT INTO schema_version VALUES (2);
+`
+
 // schemaMigrations 按版本号递增，每个版本在事务内执行
-var schemaMigrations = []string{schemaV1}
+var schemaMigrations = []string{schemaV1, schemaV2}

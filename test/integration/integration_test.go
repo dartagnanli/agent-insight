@@ -135,7 +135,7 @@ func TestDBPath_环境变量配置(t *testing.T) {
 
 	t.Setenv("AGENT_INSIGHT_DB_PATH", customPath)
 
-	cfg := config.StorageConfig{Type: "sqlite", Path: ""}
+	cfg := config.StorageConfig{Type: "sqlite", Path: customPath}
 	db, err := storage.NewSQLite(context.Background(), cfg)
 	require.NoError(t, err)
 	defer db.Close()

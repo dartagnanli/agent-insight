@@ -8,6 +8,7 @@ type EventFilter struct {
 	EventType *string    // 精确匹配
 	ToolName  *string    // 精确匹配
 	Blocked   *bool      // 精确匹配
+	Cwd       *string    // 按项目路径过滤
 	Since     *time.Time // created_at >=
 	Until     *time.Time // created_at <=
 	Limit     int        // 默认 100，最大 10000

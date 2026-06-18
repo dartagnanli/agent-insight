@@ -57,8 +57,8 @@ func TestDBPath_默认路径(t *testing.T) {
 	cfg := DefaultConfig()
 	path, err := DBPath(cfg)
 	require.NoError(t, err)
-	cwd, _ := os.Getwd()
-	expected := filepath.Join(cwd, ".agent-insight", "insight.db")
+	home, _ := os.UserHomeDir()
+	expected := filepath.Join(home, ".agent-insight", "insight.db")
 	assert.Equal(t, expected, path)
 }
 

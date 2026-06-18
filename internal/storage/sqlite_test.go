@@ -505,7 +505,7 @@ func TestSQLite_Schema迁移_版本递增(t *testing.T) {
 	var version int
 	err := s.db.QueryRowContext(ctx, "SELECT MAX(version) FROM schema_version").Scan(&version)
 	require.NoError(t, err)
-	assert.Equal(t, 1, version)
+	assert.Equal(t, 2, version)
 }
 
 // --- TestSQLite_ListSessions_排序 ---
