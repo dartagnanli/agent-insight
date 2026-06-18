@@ -1,0 +1,19 @@
+# Go
+bin/
+dist/
+*.exe
+*.test
+*.out
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent Insight data
+.agent-insight/
