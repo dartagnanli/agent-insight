@@ -1,0 +1,8 @@
+{
+  "session_id": "sess-abc123",
+  "cwd": "/home/user/project",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Bash",
+  "tool_input": {"command": "npm test"},
+  "tool_response": {"exit_code": 0, "stdout": "All tests passed", "stderr": ""}
+}
