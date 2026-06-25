@@ -190,7 +190,7 @@ func main() {
 					if commit == "unknown" && strings.HasPrefix(info.Main.Version, "v0.0.0-") {
 						parts := strings.SplitN(info.Main.Version, "-", 3)
 						if len(parts) == 3 {
-							commit = parts[2][:min(len(parts[2]), 12)]
+							commit = parts[2][:min(len(parts[2]), 7)]
 						}
 					}
 					for _, s := range info.Settings {
