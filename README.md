@@ -14,11 +14,11 @@ Claude Code Hooks 可观测性平台 — 调用链追踪、统计分析、实时
 
 ```bash
 # 从源码构建
-git clone ssh://ezone.ksyun.com:23/ezone/libin18/agent-insight.git
+git clone https://github.com/dartagnanli/agent-insight.git
 cd agent-insight && make install
 
 # 或使用 go install
-go install github.com/libin18/agent-insight/cmd/agent-insight@latest
+go install github.com/dartagnanli/agent-insight/cmd/agent-insight@latest
 ```
 
 ## 快速开始

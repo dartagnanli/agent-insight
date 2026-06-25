@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # agent-insight 安装脚本
-# 用法: curl -fsSL https://raw.githubusercontent.com/libin18/agent-insight/main/scripts/install.sh | bash
+# 用法: curl -fsSL https://raw.githubusercontent.com/dartagnanli/agent-insight/main/scripts/install.sh | bash
 
-REPO="libin18/agent-insight"
+REPO="dartagnanli/agent-insight"
 BINARY_NAME="agent-insight"
 INSTALL_DIR="${HOME}/.local/bin"
 

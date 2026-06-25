@@ -9,7 +9,7 @@ agent-insight 是 Claude Code Hooks 的可观测性平台。它注册为 Claude 
 ### 从源码构建
 
 ```bash
-git clone ssh://ezone.ksyun.com:23/ezone/libin18/agent-insight.git
+git clone https://github.com/dartagnanli/agent-insight.git
 cd agent-insight
 make install
 ```
@@ -17,7 +17,7 @@ make install
 ### 使用 go install
 
 ```bash
-go install github.com/libin18/agent-insight/cmd/agent-insight@latest
+go install github.com/dartagnanli/agent-insight/cmd/agent-insight@latest
 ```
 
 ### 验证安装
