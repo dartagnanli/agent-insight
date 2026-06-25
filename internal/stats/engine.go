@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 )
 
 // StatsSnapshot 保存某一时刻的统计快照

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libin18/agent-insight/pkg/event"
-	"github.com/libin18/agent-insight/pkg/hookinput"
+	"github.com/dartagnanli/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/pkg/hookinput"
 )
 
 // StorageWriter 是 collector 所需的最小存储接口

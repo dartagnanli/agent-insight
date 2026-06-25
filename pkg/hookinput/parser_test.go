@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/libin18/agent-insight/internal/config"
-	"github.com/libin18/agent-insight/internal/storage"
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/internal/config"
+	"github.com/dartagnanli/agent-insight/internal/storage"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

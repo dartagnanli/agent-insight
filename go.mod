@@ -1,4 +1,4 @@
-module github.com/libin18/agent-insight
+module github.com/dartagnanli/agent-insight
 
 go 1.25.0
 

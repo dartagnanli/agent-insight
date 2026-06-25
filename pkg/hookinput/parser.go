@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 )
 
 // ParseHookInput reads JSON from an io.Reader and parses it into a HookInput.

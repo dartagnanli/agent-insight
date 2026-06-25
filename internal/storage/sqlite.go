@@ -11,8 +11,8 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/libin18/agent-insight/internal/config"
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/internal/config"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 )
 
 // SQLite 实现 Storage 接口

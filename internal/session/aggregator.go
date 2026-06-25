@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libin18/agent-insight/internal/storage"
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/internal/storage"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 )
 
 // Aggregator 会话指标聚合器，将 session 统计数据写入 session_stats 表

@@ -1,7 +1,7 @@
 package collector
 
 import (
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 )
 
 // Sanitizer 截断过大的 tool_input 和 tool_output

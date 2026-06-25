@@ -14,13 +14,13 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/libin18/agent-insight/internal/collector"
-	"github.com/libin18/agent-insight/internal/config"
-	"github.com/libin18/agent-insight/internal/session"
-	"github.com/libin18/agent-insight/internal/stats"
-	"github.com/libin18/agent-insight/internal/storage"
-	"github.com/libin18/agent-insight/internal/trace"
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/internal/collector"
+	"github.com/dartagnanli/agent-insight/internal/config"
+	"github.com/dartagnanli/agent-insight/internal/session"
+	"github.com/dartagnanli/agent-insight/internal/stats"
+	"github.com/dartagnanli/agent-insight/internal/storage"
+	"github.com/dartagnanli/agent-insight/internal/trace"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 	"github.com/spf13/cobra"
 )
 

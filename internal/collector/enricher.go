@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/libin18/agent-insight/pkg/event"
+	"github.com/dartagnanli/agent-insight/pkg/event"
 )
 
 // Enricher 为 hook 事件补充元数据（UUID、PID、hostname、timestamp）
