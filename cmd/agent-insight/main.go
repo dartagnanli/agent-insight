@@ -284,8 +284,13 @@ func runInit(global bool) {
 			fmt.Fprintf(os.Stderr, "failed to parse %s: %v\n", path, err)
 			os.Exit(1)
 		}
+		pre, err := json.MarshalIndent(existing, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to marshal backup: %v\n", err)
+			os.Exit(1)
+		}
 		backup := path + ".bak"
-		if err := os.WriteFile(backup, raw, 0600); err != nil {
+		if err := os.WriteFile(backup, append(pre, '\n'), 0600); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to backup %s: %v\n", backup, err)
 			os.Exit(1)
 		}
@@ -341,7 +346,7 @@ func runInit(global bool) {
 		os.Exit(1)
 	}
 
-	if err := os.WriteFile(path, out, 0644); err != nil {
+	if err := os.WriteFile(path, append(out, '\n'), 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write: %v\n", err)
 		os.Exit(1)
 	}
