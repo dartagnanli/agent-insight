@@ -179,10 +179,19 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			commit := buildCommit
 			version := buildVersion
-			if commit == "unknown" || version == config.Version {
+			defaultVersion := "0.1.0-dev"
+			if commit == "unknown" || version == defaultVersion {
 				if info, ok := debug.ReadBuildInfo(); ok {
-					if version == config.Version && info.Main.Version != "" && info.Main.Version != "(devel)" {
+					// 真实 tag 不以 v0.0.0- 开头，伪版本号以 v0.0.0- 开头
+					if version == defaultVersion && info.Main.Version != "" && info.Main.Version != "(devel)" && !strings.HasPrefix(info.Main.Version, "v0.0.0-") {
 						version = info.Main.Version
+					}
+					// 从伪版本号中提取 commit
+					if commit == "unknown" && strings.HasPrefix(info.Main.Version, "v0.0.0-") {
+						parts := strings.SplitN(info.Main.Version, "-", 3)
+						if len(parts) == 3 {
+							commit = parts[2][:min(len(parts[2]), 12)]
+						}
 					}
 					for _, s := range info.Settings {
 						switch s.Key {
@@ -191,7 +200,7 @@ func main() {
 								commit = s.Value[:min(len(s.Value), 7)]
 							}
 						case "vcs.time":
-							if version == config.Version {
+							if version == defaultVersion {
 								t, _ := time.Parse(time.RFC3339, s.Value)
 								version = fmt.Sprintf("v0.0.0-%s-%s", t.Format("20060102150405"), commit)
 							}
