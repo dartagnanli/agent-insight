@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"runtime"
 	"sort"
 	"strconv"
@@ -176,8 +177,19 @@ func main() {
 		Use:   "version",
 		Short: "版本信息",
 		Run: func(cmd *cobra.Command, args []string) {
+			commit := buildCommit
+			if commit == "unknown" {
+				if info, ok := debug.ReadBuildInfo(); ok {
+					for _, s := range info.Settings {
+						if s.Key == "vcs.revision" {
+							commit = s.Value[:min(len(s.Value), 7)]
+							break
+						}
+					}
+				}
+			}
 			fmt.Printf("agent-insight %s (go%s, %s/%s, commit: %s)\n",
-				buildVersion, runtime.Version()[2:], runtime.GOOS, runtime.GOARCH, buildCommit)
+				buildVersion, runtime.Version()[2:], runtime.GOOS, runtime.GOARCH, commit)
 		},
 	}
 	rootCmd.AddCommand(versionCmd)
