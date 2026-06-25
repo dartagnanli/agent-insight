@@ -284,6 +284,12 @@ func runInit(global bool) {
 			fmt.Fprintf(os.Stderr, "failed to parse %s: %v\n", path, err)
 			os.Exit(1)
 		}
+		backup := path + ".bak"
+		if err := os.WriteFile(backup, raw, 0600); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to backup %s: %v\n", backup, err)
+			os.Exit(1)
+		}
+		fmt.Printf("Backup saved to %s\n", backup)
 	}
 
 	hooksRaw, _ := existing["hooks"]
