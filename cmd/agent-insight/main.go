@@ -66,12 +66,11 @@ func main() {
 		Short: "初始化配置，生成 settings.json hook 注册",
 		Run: func(cmd *cobra.Command, args []string) {
 			global, _ := cmd.Flags().GetBool("global")
-			force, _ := cmd.Flags().GetBool("force")
-			runInit(global, force)
+			
+			runInit(global)
 		},
 	}
 	initCmd.Flags().Bool("global", false, "生成用户级 ~/.claude/settings.json 配置")
-	initCmd.Flags().Bool("force", false, "覆盖已存在的配置")
 	rootCmd.AddCommand(initCmd)
 
 	// --- trace ---
@@ -253,38 +252,8 @@ func runCollect(cfg *config.Config, eventType string) {
 
 // ======== init ========
 
-func runInit(global bool, force bool) {
-	type hookEntry struct {
-		Type    string `json:"type"`
-		Command string `json:"command"`
-	}
-	type hookGroup struct {
-		Matcher string      `json:"matcher"`
-		Hooks   []hookEntry `json:"hooks"`
-	}
-	type settingsJSON struct {
-		Hooks map[string][]hookGroup `json:"hooks"`
-	}
-
+func runInit(global bool) {
 	events := []string{"PreToolUse", "PostToolUse", "SessionStart", "Stop"}
-	hooks := make(map[string][]hookGroup)
-	for _, ev := range events {
-		hooks[ev] = []hookGroup{
-			{
-				Matcher: "",
-				Hooks: []hookEntry{
-					{Type: "command", Command: fmt.Sprintf("agent-insight collect --event %s", ev)},
-				},
-			},
-		}
-	}
-
-	data := settingsJSON{Hooks: hooks}
-	out, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to marshal settings: %v\n", err)
-		os.Exit(1)
-	}
 
 	var path string
 	if global {
@@ -308,11 +277,62 @@ func runInit(global bool, force bool) {
 		path = dir + "/settings.json"
 	}
 
-	if !force {
-		if _, err := os.Stat(path); err == nil {
-			fmt.Fprintf(os.Stderr, "file already exists: %s (use --force to overwrite)\n", path)
+	existing := map[string]any{}
+	raw, err := os.ReadFile(path)
+	if err == nil {
+		if err := json.Unmarshal(raw, &existing); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to parse %s: %v\n", path, err)
 			os.Exit(1)
 		}
+	}
+
+	hooksRaw, _ := existing["hooks"]
+	hooksMap, ok := hooksRaw.(map[string]any)
+	if !ok || hooksMap == nil {
+		hooksMap = map[string]any{}
+	}
+
+	for _, ev := range events {
+		cmd := fmt.Sprintf("agent-insight collect --event %s", ev)
+		groupsRaw, _ := hooksMap[ev]
+		groups, ok := groupsRaw.([]any)
+		if !ok || groups == nil {
+			groups = []any{}
+		}
+
+		found := false
+		for _, g := range groups {
+			m, _ := g.(map[string]any)
+			hs, _ := m["hooks"].([]any)
+			for _, h := range hs {
+				entry, _ := h.(map[string]any)
+				if entry["command"] == cmd {
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+		}
+
+		if !found {
+			groups = append(groups, map[string]any{
+				"matcher": "",
+				"hooks": []any{
+					map[string]any{"type": "command", "command": cmd},
+				},
+			})
+		}
+		hooksMap[ev] = groups
+	}
+
+	existing["hooks"] = hooksMap
+
+	out, err := json.MarshalIndent(existing, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to marshal settings: %v\n", err)
+		os.Exit(1)
 	}
 
 	if err := os.WriteFile(path, out, 0644); err != nil {
