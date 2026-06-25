@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	buildVersion = config.Version
+	buildVersion = "0.1.0-dev"
 	buildCommit  = "unknown"
 )
 
@@ -178,18 +178,29 @@ func main() {
 		Short: "版本信息",
 		Run: func(cmd *cobra.Command, args []string) {
 			commit := buildCommit
-			if commit == "unknown" {
+			version := buildVersion
+			if commit == "unknown" || version == config.Version {
 				if info, ok := debug.ReadBuildInfo(); ok {
+					if version == config.Version && info.Main.Version != "" && info.Main.Version != "(devel)" {
+						version = info.Main.Version
+					}
 					for _, s := range info.Settings {
-						if s.Key == "vcs.revision" {
-							commit = s.Value[:min(len(s.Value), 7)]
-							break
+						switch s.Key {
+						case "vcs.revision":
+							if commit == "unknown" {
+								commit = s.Value[:min(len(s.Value), 7)]
+							}
+						case "vcs.time":
+							if version == config.Version {
+								t, _ := time.Parse(time.RFC3339, s.Value)
+								version = fmt.Sprintf("v0.0.0-%s-%s", t.Format("20060102150405"), commit)
+							}
 						}
 					}
 				}
 			}
 			fmt.Printf("agent-insight %s (go%s, %s/%s, commit: %s)\n",
-				buildVersion, runtime.Version()[2:], runtime.GOOS, runtime.GOARCH, commit)
+				version, runtime.Version()[2:], runtime.GOOS, runtime.GOARCH, commit)
 		},
 	}
 	rootCmd.AddCommand(versionCmd)
