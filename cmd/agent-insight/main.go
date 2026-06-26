@@ -17,6 +17,7 @@ import (
 
 	"github.com/dartagnanli/agent-insight/internal/collector"
 	"github.com/dartagnanli/agent-insight/internal/config"
+	"github.com/dartagnanli/agent-insight/internal/dashboard"
 	"github.com/dartagnanli/agent-insight/internal/session"
 	"github.com/dartagnanli/agent-insight/internal/stats"
 	"github.com/dartagnanli/agent-insight/internal/storage"
@@ -127,6 +128,24 @@ func main() {
 	statsCmd.Flags().String("format", "text", "输出格式: text|json")
 	statsCmd.Flags().String("project", "", "按项目路径过滤（支持相对路径）")
 	rootCmd.AddCommand(statsCmd)
+
+	// --- dashboard ---
+	dashboardCmd := &cobra.Command{
+		Use:   "dashboard",
+		Short: "启动 Web 仪表板",
+		Run: func(cmd *cobra.Command, args []string) {
+			host, _ := cmd.Flags().GetString("host")
+			port, _ := cmd.Flags().GetInt("port")
+			openBrowser, _ := cmd.Flags().GetBool("open")
+			globalFlag, _ := cmd.Flags().GetBool("global")
+			runDashboard(cfg, host, port, openBrowser, globalFlag)
+		},
+	}
+	dashboardCmd.Flags().String("host", "127.0.0.1", "监听地址")
+	dashboardCmd.Flags().Int("port", 8080, "监听端口")
+	dashboardCmd.Flags().Bool("open", false, "自动打开浏览器")
+	dashboardCmd.Flags().Bool("global", false, "使用全局数据库")
+	rootCmd.AddCommand(dashboardCmd)
 
 	// --- config ---
 	configCmd := &cobra.Command{
@@ -486,9 +505,13 @@ func runSessions(cfg *config.Config, sortField, order, since string, limit int, 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "ID\tStarted\tEvents\tDuration\tBlocked")
 	for _, sm := range summaries {
-		dur := event.FormatDuration(sm.DurationSec)
-		started := sm.StartedAt.Format("2006-01-02 15:04")
-		fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%d\n", sm.SessionID, started, sm.TotalEvents, dur, sm.Blocked)
+		dur := event.FormatDuration(sm.DurationSecs)
+		started, _ := time.Parse("2006-01-02T15:04:05.000Z", sm.StartedAt)
+		if started.IsZero() {
+			started, _ = time.Parse(time.RFC3339, sm.StartedAt)
+		}
+		startedStr := started.Format("2006-01-02 15:04")
+		fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%d\n", sm.SessionID, startedStr, sm.TotalEvents, dur, sm.BlockedCalls)
 	}
 	w.Flush()
 }
@@ -746,4 +769,45 @@ func truncateDisplay(s string, maxLen int) string {
 		return s[:maxLen] + "..."
 	}
 	return s
+}
+
+// ======== dashboard ========
+
+func runDashboard(cfg *config.Config, host string, port int, openBrowser bool, globalFlag bool) {
+	ctx := context.Background()
+
+	// 确定数据库路径
+	if globalFlag {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		cfg.Storage.Path = filepath.Join(home, ".agent-insight", "insight.db")
+	}
+
+	s, err := openStorage(ctx, cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	dashCfg := config.DashboardConfig{
+		Host: host,
+		Port: port,
+	}
+
+	srv := dashboard.NewServer(dashCfg, s)
+
+	if openBrowser {
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			srv.OpenBrowser()
+		}()
+	}
+
+	if err := srv.Start(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 }
