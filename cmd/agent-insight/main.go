@@ -601,35 +601,35 @@ func runStats(cfg *config.Config, since, tool, evt, format, project string) {
 }
 
 func printStatsText(snap *stats.StatsSnapshot, ts map[string]*stats.ToolStats, since string) {
-	fmt.Printf("\n=== agent-insight Stats (Last %s) ===\n\n", since)
+	fmt.Printf("\n=== agent-insight 统计 (最近 %s) ===\n\n", since)
 
-	fmt.Printf("Total Events:     %d\n", snap.TotalEvents)
-	fmt.Printf("Sessions:         %d\n", snap.TotalSessions)
-	fmt.Printf("Total Blocked:    %d\n", snap.TotalBlocked)
-	fmt.Printf("Block Rate:       %.1f%%\n", snap.BlockRate*100)
+	fmt.Printf("事件总数:         %d\n", snap.TotalEvents)
+	fmt.Printf("会话数:           %d\n", snap.TotalSessions)
+	fmt.Printf("拦截总数:         %d\n", snap.TotalBlocked)
+	fmt.Printf("拦截率:           %.1f%%\n", snap.BlockRate*100)
 
-	fmt.Printf("\nAvg Hook Latency:  %.1fms\n", snap.AvgHookMs)
-	fmt.Printf("P50 Hook Latency: %.1fms\n", snap.P50HookMs)
-	fmt.Printf("P95 Hook Latency: %.1fms\n", snap.P95HookMs)
-	fmt.Printf("P99 Hook Latency: %.1fms\n", snap.P99HookMs)
+	fmt.Printf("\nHook 开销 平均:    %.1fms\n", snap.AvgHookMs)
+	fmt.Printf("Hook 开销 P50:    %.1fms\n", snap.P50HookMs)
+	fmt.Printf("Hook 开销 P95:    %.1fms\n", snap.P95HookMs)
+	fmt.Printf("Hook 开销 P99:    %.1fms\n", snap.P99HookMs)
 
-	fmt.Println("\nTools Used:")
+	fmt.Println("\n工具使用 (Tools Used):")
 	for name, cnt := range snap.ToolDist {
 		bl := snap.BlockDist[name]
 		fmt.Printf("  %-12s %d", name, cnt)
 		if bl > 0 {
-			fmt.Printf(" (%d blocked)", bl)
+			fmt.Printf(" (%d 拦截)", bl)
 		}
 		fmt.Println()
 	}
 
-	fmt.Println("\nEvent Types:")
+	fmt.Println("\n事件类型 (Event Types):")
 	for name, cnt := range snap.EventTypeDist {
 		fmt.Printf("  %-18s %d\n", name, cnt)
 	}
 
 	if len(snap.BlockDist) > 0 {
-		fmt.Println("\nTop Blocked:")
+		fmt.Println("\n拦截排行 (Top Blocked):")
 		type kv struct {
 			k string
 			v int
@@ -648,9 +648,9 @@ func printStatsText(snap *stats.StatsSnapshot, ts map[string]*stats.ToolStats, s
 	}
 
 	if len(ts) > 0 {
-		fmt.Println("\nTool Duration:")
+		fmt.Println("\n工具耗时 (Tool Duration):")
 		for name, t := range ts {
-			fmt.Printf("  %-12s avg=%.1fms, p99=%.1fms\n", name, t.AvgMs, t.P99Ms)
+			fmt.Printf("  %-12s 平均=%.1fms, P99=%.1fms\n", name, t.AvgMs, t.P99Ms)
 		}
 	}
 }
