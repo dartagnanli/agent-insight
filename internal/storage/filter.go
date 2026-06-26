@@ -36,15 +36,6 @@ type SessionFilter struct {
 	Offset      int        // 分页偏移
 }
 
-// SessionSummary 会话列表摘要
-type SessionSummary struct {
-	SessionID   string    `json:"session_id"`
-	StartedAt   time.Time `json:"started_at"`
-	TotalEvents int       `json:"total_events"`
-	DurationSec int64     `json:"duration_secs"`
-	Blocked     int       `json:"blocked"`
-}
-
 // StatsHourlyRow stats_hourly 表的一行
 type StatsHourlyRow struct {
 	BucketHour    string  `json:"bucket_hour"    db:"bucket_hour"`

@@ -206,6 +206,79 @@ func (s *SQLite) QueryEvents(ctx context.Context, f EventFilter) ([]*event.HookE
 	return events, rows.Err()
 }
 
+func (s *SQLite) CountEvents(ctx context.Context, f EventFilter) (int, error) {
+	q := "SELECT COUNT(*) FROM hook_events WHERE 1=1"
+	args := []any{}
+
+	if f.SessionID != nil {
+		q += " AND session_id = ?"
+		args = append(args, *f.SessionID)
+	}
+	if f.EventType != nil {
+		q += " AND event_type = ?"
+		args = append(args, *f.EventType)
+	}
+	if f.ToolName != nil {
+		q += " AND tool_name = ?"
+		args = append(args, *f.ToolName)
+	}
+	if f.Blocked != nil {
+		q += " AND blocked = ?"
+		args = append(args, boolToInt(*f.Blocked))
+	}
+	if f.Cwd != nil {
+		q += " AND cwd = ?"
+		args = append(args, *f.Cwd)
+	}
+	if f.Since != nil {
+		q += " AND created_at >= ?"
+		args = append(args, f.Since.Format(time.RFC3339Nano))
+	}
+	if f.Until != nil {
+		q += " AND created_at <= ?"
+		args = append(args, f.Until.Format(time.RFC3339Nano))
+	}
+
+	var count int
+	err := s.db.QueryRowContext(ctx, q, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count events: %w", err)
+	}
+	return count, nil
+}
+
+func (s *SQLite) QueryRecentEvents(ctx context.Context, afterID int64, limit int) ([]*event.HookEvent, error) {
+	if limit <= 0 || limit > 10000 {
+		limit = 1000
+	}
+	rows, err := s.db.QueryContext(ctx,
+		"SELECT id, event_id, session_id, event_type, tool_name, tool_input, tool_output, "+
+			"cwd, transcript_path, blocked, block_reason, hook_exit_code, hook_duration_ms, "+
+			"collect_duration_ms, pid, hostname, created_at FROM hook_events WHERE id > ? ORDER BY id ASC LIMIT ?",
+		afterID, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query recent events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []*event.HookEvent
+	for rows.Next() {
+		ev := &event.HookEvent{}
+		var blocked int
+		err := rows.Scan(&ev.ID, &ev.EventID, &ev.SessionID, &ev.EventType, &ev.ToolName,
+			&ev.ToolInput, &ev.ToolOutput, &ev.Cwd, &ev.TranscriptPath, &blocked,
+			&ev.BlockReason, &ev.HookExitCode, &ev.HookDurationMs, &ev.CollectDurationMs,
+			&ev.Pid, &ev.Hostname, &ev.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("scan recent event: %w", err)
+		}
+		ev.Blocked = blocked == 1
+		events = append(events, ev)
+	}
+	return events, rows.Err()
+}
+
 func (s *SQLite) GetEvent(ctx context.Context, eventID string) (*event.HookEvent, error) {
 	ev := &event.HookEvent{}
 	var blocked int
@@ -402,42 +475,31 @@ func (s *SQLite) QuerySessionStats(ctx context.Context, f SessionFilter) ([]Sess
 	return result, rows.Err()
 }
 
-func (s *SQLite) ListSessions(ctx context.Context, f SessionFilter) ([]SessionSummary, error) {
-	// 先尝试 session_stats，再从 hook_events 聚合
-	q := `SELECT ss.session_id, ss.started_at,
-	      COALESCE(ss.total_events, he.cnt, 0),
-	      COALESCE(ss.duration_secs, 0),
-	      COALESCE(ss.blocked_calls, he.blk, 0)
-	      FROM session_stats ss
-	      LEFT JOIN (
-	        SELECT session_id, COUNT(*) as cnt,
-	        SUM(CASE WHEN blocked=1 THEN 1 ELSE 0 END) as blk
-	        FROM hook_events GROUP BY session_id
-	      ) he ON ss.session_id = he.session_id
-	      WHERE 1=1`
+func (s *SQLite) ListSessions(ctx context.Context, f SessionFilter) ([]SessionStatsRow, error) {
+	q := "SELECT session_id, started_at, ended_at, duration_secs, total_events, tool_calls, " +
+		"blocked_calls, block_rate, tools_used, avg_tool_duration_ms, p99_tool_duration_ms, " +
+		"project_path FROM session_stats WHERE 1=1"
 	args := []any{}
 
 	if f.ProjectPath != nil {
-		q += " AND ss.project_path = ?"
+		q += " AND project_path = ?"
 		args = append(args, *f.ProjectPath)
 	}
 	if f.Since != nil {
-		q += " AND ss.started_at >= ?"
+		q += " AND started_at >= ?"
 		args = append(args, f.Since.Format(time.RFC3339))
 	}
 	if f.Until != nil {
-		q += " AND ss.started_at <= ?"
+		q += " AND started_at <= ?"
 		args = append(args, f.Until.Format(time.RFC3339))
 	}
 
-	sortBy := "ss.started_at"
+	sortBy := "started_at"
 	switch f.SortBy {
 	case "total_events":
-		sortBy = "COALESCE(ss.total_events, he.cnt, 0)"
+		sortBy = "total_events"
 	case "duration_secs":
-		sortBy = "ss.duration_secs"
-	case "blocked":
-		sortBy = "COALESCE(ss.blocked_calls, he.blk, 0)"
+		sortBy = "duration_secs"
 	}
 	sortOrder := "DESC"
 	if f.SortOrder == "asc" {
@@ -458,21 +520,57 @@ func (s *SQLite) ListSessions(ctx context.Context, f SessionFilter) ([]SessionSu
 	}
 	defer rows.Close()
 
-	var result []SessionSummary
+	var result []SessionStatsRow
 	for rows.Next() {
-		var sum SessionSummary
-		var startedAt string
-		err := rows.Scan(&sum.SessionID, &startedAt, &sum.TotalEvents, &sum.DurationSec, &sum.Blocked)
+		var r SessionStatsRow
+		var endedAt, projectPath sql.NullString
+		var avgDur, p99Dur sql.NullFloat64
+		err := rows.Scan(&r.SessionID, &r.StartedAt, &endedAt, &r.DurationSecs,
+			&r.TotalEvents, &r.ToolCalls, &r.BlockedCalls, &r.BlockRate,
+			&r.ToolsUsed, &avgDur, &p99Dur, &projectPath)
 		if err != nil {
-			return nil, fmt.Errorf("scan session summary: %w", err)
+			return nil, fmt.Errorf("scan session stats: %w", err)
 		}
-		sum.StartedAt, _ = time.Parse(time.RFC3339Nano, startedAt)
-		if sum.StartedAt.IsZero() {
-			sum.StartedAt, _ = time.Parse("2006-01-02T15:04:05Z", startedAt)
+		if endedAt.Valid {
+			r.EndedAt = &endedAt.String
 		}
-		result = append(result, sum)
+		if projectPath.Valid {
+			r.ProjectPath = &projectPath.String
+		}
+		if avgDur.Valid {
+			r.AvgToolDurationMs = &avgDur.Float64
+		}
+		if p99Dur.Valid {
+			r.P99ToolDurationMs = &p99Dur.Float64
+		}
+		result = append(result, r)
 	}
 	return result, rows.Err()
+}
+
+func (s *SQLite) CountSessions(ctx context.Context, f SessionFilter) (int, error) {
+	q := "SELECT COUNT(*) FROM session_stats WHERE 1=1"
+	args := []any{}
+
+	if f.ProjectPath != nil {
+		q += " AND project_path = ?"
+		args = append(args, *f.ProjectPath)
+	}
+	if f.Since != nil {
+		q += " AND started_at >= ?"
+		args = append(args, f.Since.Format(time.RFC3339))
+	}
+	if f.Until != nil {
+		q += " AND started_at <= ?"
+		args = append(args, f.Until.Format(time.RFC3339))
+	}
+
+	var count int
+	err := s.db.QueryRowContext(ctx, q, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count sessions: %w", err)
+	}
+	return count, nil
 }
 
 func (s *SQLite) DeleteBefore(ctx context.Context, before time.Time) (int64, error) {

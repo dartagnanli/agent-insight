@@ -16,11 +16,11 @@ import (
 // Aggregator 会话指标聚合器，将 session 统计数据写入 session_stats 表
 type Aggregator struct {
 	mu      sync.Mutex
-	storage *storage.SQLite
+	storage storage.Storage
 }
 
 // NewAggregator 创建聚合器
-func NewAggregator(s *storage.SQLite) *Aggregator {
+func NewAggregator(s storage.Storage) *Aggregator {
 	return &Aggregator{storage: s}
 }
 
