@@ -8,12 +8,21 @@
 </head>
 <body>
     <nav id="navbar">
-        <div class="nav-brand">Agent Insight <span id="nav-version" style="color:var(--text-muted);font-size:12px;font-weight:400"></span></div>
+        <div class="nav-brand">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            Agent Insight <span id="nav-version"></span>
+        </div>
         <div class="nav-links">
             <a href="#/dashboard" class="nav-link" data-page="dashboard">仪表板</a>
             <a href="#/events" class="nav-link" data-page="events">事件流</a>
             <a href="#/trace" class="nav-link" data-page="trace">调用链</a>
             <a href="#/sessions" class="nav-link" data-page="sessions">会话</a>
+        </div>
+        <div class="nav-right">
+            <span class="ws-status disconnected" id="ws-indicator">
+                <span class="ws-dot"></span>
+                <span class="ws-text">未连接</span>
+            </span>
         </div>
     </nav>
     <main id="app"></main>
