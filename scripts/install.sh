@@ -39,10 +39,25 @@ rm -rf "${TMPDIR}"
 
 # 检查 PATH
 if ! echo "${PATH}" | grep -q "${INSTALL_DIR}"; then
+  SHELL_RC=""
+  case "$(basename "${SHELL:-bash}")" in
+    zsh)  SHELL_RC="${HOME}/.zshrc" ;;
+    fish) SHELL_RC="${HOME}/.config/fish/config.fish" ;;
+    bash) SHELL_RC="${HOME}/.bashrc" ;;
+    *)    SHELL_RC="${HOME}/.profile" ;;
+  esac
+
+  FISH_LINE="set -gx PATH ${INSTALL_DIR} \$PATH"
+  SH_LINE="export PATH=\"${INSTALL_DIR}:\$PATH\""
+
   echo ""
-  echo "请将 ${INSTALL_DIR} 添加到 PATH:"
-  echo "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc"
-  echo "  source ~/.bashrc"
+  echo "请将 ${INSTALL_DIR} 添加到 PATH："
+  if [ "$(basename "${SHELL:-bash}")" = "fish" ]; then
+    echo "  echo '${FISH_LINE}' >> ${SHELL_RC}"
+  else
+    echo "  echo '${SH_LINE}' >> ${SHELL_RC}"
+    echo "  source ${SHELL_RC}"
+  fi
 fi
 
 echo ""
