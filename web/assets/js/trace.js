@@ -9,7 +9,7 @@ const TracePage = {
             <h2 style="margin-bottom:16px">调用链追踪</h2>
             <div class="filter-bar">
                 <input id="trace-session-input" type="text" placeholder="输入会话ID" value="${escapeHTML(TracePage.sessionID)}" style="width:300px">
-                <button id="trace-load-btn" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:6px 16px;cursor:pointer">加载</button>
+                <button id="trace-load-btn" class="btn-accent">加载</button>
             </div>
             <div id="trace-content"></div>
         `;
@@ -21,7 +21,6 @@ const TracePage = {
             }
         });
 
-        // 如果有 sessionID 就自动加载
         if (TracePage.sessionID) {
             TracePage.loadTrace();
         }
@@ -49,54 +48,78 @@ const TracePage = {
         }
 
         const totalDuration = trace.duration_secs || 0;
-        const startedAt = new Date(trace.started_at).getTime();
+        const totalDurationMs = totalDuration * 1000;
+        const startedAt = trace.started_at ? new Date(trace.started_at).getTime() : 0;
+        const endedAt = trace.ended_at ? new Date(trace.ended_at).getTime() : startedAt + totalDurationMs;
 
-        // 计算 time range
-        let minTime = startedAt;
-        let maxTime = startedAt + totalDuration * 1000;
+        let html = '';
 
-        let html = `<div class="card" style="margin-bottom:16px">
+        // 会话信息卡片
+        html += `<div class="card" style="margin-bottom:16px">
             <div class="trace-header">
-                <div><strong>会话ID:</strong> ${escapeHTML(trace.session_id)}</div>
-                <div><strong>总时长:</strong> ${formatDuration(trace.duration_secs)} &nbsp; <strong>事件数:</strong> ${trace.total_events}</div>
+                <div>
+                    <div class="card-title" style="margin-bottom:4px">会话信息</div>
+                    <div class="mono-cell" style="font-size:11px;color:var(--text-muted)">${escapeHTML(trace.session_id)}</div>
+                </div>
+                <div class="trace-meta">
+                    <span>时长 <strong>${formatDuration(totalDuration)}</strong></span>
+                    <span>事件 <strong>${trace.total_events}</strong></span>
+                    <span>调用 <strong>${trace.spans ? trace.spans.length : 0}</strong></span>
+                </div>
             </div>
         </div>`;
 
-        // 独立事件
+        // 时间轴区域
+        html += '<div class="card">';
+
+        // 时间刻度
+        if (totalDurationMs > 0) {
+            html += '<div class="trace-ruler">';
+            const tickCount = Math.min(6, Math.ceil(totalDuration));
+            for (let i = 0; i <= tickCount; i++) {
+                const sec = Math.round(totalDuration * i / tickCount);
+                const left = (i / tickCount * 100);
+                html += `<span style="left:${left}%">${formatDuration(sec)}</span>`;
+            }
+            html += '</div>';
+        }
+
+        // 独立事件（渲染为标记点）
         if (trace.standalone_events && trace.standalone_events.length) {
-            html += '<div style="margin-bottom:12px">';
-            html += '<div class="card-title" style="margin-bottom:8px">独立事件</div>';
+            html += '<div style="margin:8px 0 4px">';
             trace.standalone_events.forEach(se => {
-                const offsetMs = new Date(se.created_at).getTime() - minTime;
-                const leftPercent = totalDuration > 0 ? (offsetMs / (totalDuration * 1000) * 100) : 0;
-                html += `<div class="trace-standalone" style="margin-left:${leftPercent}%">
-                    <span class="event-type ${se.event_type === 'SessionStart' ? 'start' : se.event_type === 'Stop' ? 'stop' : ''}">${escapeHTML(se.event_type)}</span>
-                    <span style="color:var(--text-muted);margin-left:8px">${formatTime(se.created_at)}</span>
+                const offsetMs = new Date(se.created_at).getTime() - startedAt;
+                const leftPercent = totalDurationMs > 0 ? (offsetMs / totalDurationMs * 100) : 0;
+                const typeClass = se.event_type === 'SessionStart' ? 'start' : se.event_type === 'Stop' ? 'stop' : '';
+                html += `<div class="trace-marker" style="left:${leftPercent}%">
+                    <span class="event-type ${typeClass}">${escapeHTML(se.event_type)}</span>
                 </div>`;
             });
             html += '</div>';
         }
 
-        // 时间轴
-        html += '<div class="card"><div class="trace-timeline">';
-
-        // Spans
+        // Spans（瀑布条）
         if (trace.spans && trace.spans.length) {
+            html += '<div class="trace-timeline">';
             trace.spans.forEach(span => {
-                const startMs = new Date(span.started_at).getTime() - minTime;
-                const leftPercent = totalDuration > 0 ? (startMs / (totalDuration * 1000) * 100) : 0;
-                const widthPercent = totalDuration > 0 ? Math.max(span.duration_ms / (totalDuration * 1000) * 100, 0.5) : 2;
-
+                const startMs = new Date(span.started_at).getTime() - startedAt;
+                const leftPercent = totalDurationMs > 0 ? (startMs / totalDurationMs * 100) : 0;
+                const widthPercent = totalDurationMs > 0 ? Math.max(span.duration_ms / totalDurationMs * 100, 0.5) : 2;
                 const barClass = span.blocked ? 'blocked' : span.orphan ? 'orphan' : 'tool';
-                const label = `${escapeHTML(span.tool_name)} ${span.duration_ms}ms${span.blocked ? ' [拦截]' : ''}${span.orphan ? ' [孤立]' : ''}`;
+
+                const durStr = formatMs(span.duration_ms);
+                const label = `${escapeHTML(span.tool_name)} ${durStr}${span.blocked ? ' [拦截]' : ''}${span.orphan ? ' [孤立]' : ''}`;
 
                 html += `<div class="trace-bar ${barClass}" style="left:${leftPercent}%;width:${widthPercent}%">
                     <span class="trace-bar-label">${label}</span>
                 </div>`;
             });
+            html += '</div>';
+        } else if (!trace.standalone_events || !trace.standalone_events.length) {
+            html += '<div class="empty-state" style="padding:24px"><div class="empty-state-text">该会话无调用数据</div></div>';
         }
 
-        html += '</div></div>';
+        html += '</div>';
         container.innerHTML = html;
     },
 };

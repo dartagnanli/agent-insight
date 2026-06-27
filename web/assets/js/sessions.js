@@ -21,7 +21,7 @@ const SessionsPage = {
                     <option value="desc">降序</option>
                     <option value="asc">升序</option>
                 </select>
-                <button id="sess-apply-filter" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:6px 16px;cursor:pointer">刷新</button>
+                <button id="sess-apply-filter" class="btn-accent">刷新</button>
             </div>
             <div class="table-wrapper card" id="sess-table-wrapper"></div>
             <div class="pagination" id="sess-pagination"></div>
@@ -48,7 +48,7 @@ const SessionsPage = {
                 sort_order: SessionsPage.sortOrder,
             };
             const projectPath = document.getElementById('sess-filter-project')?.value.trim();
-            if (projectPath) params.project_path = projectPath;
+            if (projectPath) params.project = projectPath;
 
             const data = await API.listSessions(params);
             SessionsPage.sessions = data.sessions || [];
@@ -74,7 +74,7 @@ const SessionsPage = {
                 <th>持续时长</th>
                 <th>事件数</th>
                 <th>工具调用</th>
-                <th>拦截次数</th>
+                <th>拦截</th>
                 <th>拦截率</th>
                 <th>使用工具</th>
                 <th>操作</th>
@@ -82,18 +82,26 @@ const SessionsPage = {
             <tbody>${SessionsPage.sessions.map(s => {
                 const blockRate = s.block_rate != null ? (s.block_rate * 100).toFixed(1) + '%' : '-';
                 const dur = s.duration_secs ? formatDuration(s.duration_secs) : '-';
-                const tools = s.tools_used ? JSON.parse(s.tools_used).join(', ') : '-';
-                const endedAt = s.ended_at ? '' : '<span style="color:var(--success);margin-left:4px">活跃</span>';
+                let tools = '-';
+                try { tools = s.tools_used ? JSON.parse(s.tools_used).map(t => `<span class="tool-tag">${escapeHTML(t)}</span>`).join('') : '-'; } catch(_) {}
+                const statusBadge = s.ended_at ? '' : '<span class="badge badge-live">活跃</span>';
                 return `<tr>
-                    <td style="font-family:monospace;font-size:12px">${escapeHTML(s.session_id)}</td>
-                    <td>${formatTime(s.started_at)}${endedAt}</td>
+                    <td class="mono-cell">${escapeHTML(s.session_id.slice(0, 8))}<span style="color:var(--text-muted)">...</span></td>
+                    <td>${formatTime(s.started_at)} ${statusBadge}</td>
                     <td>${dur}</td>
                     <td>${s.total_events}</td>
                     <td>${s.tool_calls || 0}</td>
                     <td style="color:${s.blocked_calls > 0 ? 'var(--danger)' : 'var(--text)'}">${s.blocked_calls || 0}</td>
                     <td>${blockRate}</td>
-                    <td style="font-size:12px">${escapeHTML(tools)}</td>
-                    <td><a href="#/trace/${encodeURIComponent(s.session_id)}" style="color:var(--accent);text-decoration:none;font-size:12px">追踪</a></td>
+                    <td style="font-size:12px">${tools}</td>
+                    <td class="action-cell">
+                        <button class="btn-icon" title="查看调用链" onclick="location.hash='#/trace?sid=${encodeURIComponent(s.session_id)}'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                        <button class="btn-icon" title="复制ID" onclick="navigator.clipboard.writeText('${escapeHTML(s.session_id)}')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </button>
+                    </td>
                 </tr>`;
             }).join('')}</tbody>
         </table>`;
