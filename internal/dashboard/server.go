@@ -20,6 +20,9 @@ import (
 	"github.com/dartagnanli/agent-insight/web"
 )
 
+// Version 通过 -ldflags 注入，与 config.Version 保持一致
+var Version = "0.1.0-dev"
+
 // Server 仪表板 HTTP 服务
 type Server struct {
 	cfg        config.DashboardConfig
@@ -131,6 +134,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/stats/hourly", s.api.HandleStatsHourly)
 	mux.HandleFunc("GET /api/v1/traces/{sessionID}", s.api.HandleTrace)
 	mux.HandleFunc("GET /api/v1/sessions", s.api.HandleListSessions)
+	mux.HandleFunc("GET /api/v1/version", s.api.HandleVersion)
 
 	// WebSocket
 	mux.HandleFunc("GET /api/v1/ws/events", s.HandleWebSocket)
