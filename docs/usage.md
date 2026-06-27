@@ -243,39 +243,82 @@ agent-insight stats [flags]
 **text 格式输出示例**：
 
 ```
-=== agent-insight Stats (Last 24h) ===
+=== agent-insight 统计 (最近 24h) ===
 
-Total Events:     1,247
-Sessions:         12
-Total Blocked:    104
-Block Rate:       8.3%
+事件总数:         1,247
+会话数:           12
+拦截总数:         104
+拦截率:           8.3%
 
-Avg Hook Latency:  1.2ms
-P50 Hook Latency: 0.8ms
-P95 Hook Latency: 3.1ms
-P99 Hook Latency: 4.8ms
+Hook 开销 平均:    1.2ms
+Hook 开销 P50:    0.8ms
+Hook 开销 P95:    3.1ms
+Hook 开销 P99:    4.8ms
 
-Tools Used:
-  Bash         489 (32 blocked)
-  Write        312 (45 blocked)
-  Edit         198 (27 blocked)
+工具使用 (Tools Used):
+  Bash         489 (32 拦截)
+  Write        312 (45 拦截)
+  Edit         198 (27 拦截)
   Read         148
 
-Event Types:
+事件类型 (Event Types):
   PreToolUse         623
   PostToolUse        614
   SessionStart       10
 
-Top Blocked:
+拦截排行 (Top Blocked):
   Write        45
   Bash         32
   Edit         27
 
-Tool Duration:
-  Bash         avg=3200.0ms, p99=12100.0ms
-  Write        avg=800.0ms, p99=2100.0ms
-  Edit         avg=1100.0ms, p99=3100.0ms
+工具耗时 (Tool Duration):
+  Bash         平均=3200.0ms, P99=12100.0ms
+  Write        平均=800.0ms, P99=2100.0ms
+  Edit         平均=1100.0ms, P99=3100.0ms
 ```
+
+### `agent-insight dashboard`
+
+启动 Web 实时仪表板。
+
+```bash
+agent-insight dashboard [flags]
+```
+
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `--host` | 127.0.0.1 | 监听地址 |
+| `--port` | 8080 | 监听端口 |
+| `--open` | false | 启动后自动打开浏览器 |
+| `--global` | false | 使用全局数据库 `~/.agent-insight/insight.db` |
+
+**启动示例**：
+
+```bash
+# 默认启动（127.0.0.1:8080）
+agent-insight dashboard
+
+# 指定端口并自动打开浏览器
+agent-insight dashboard --port 9090 --open
+
+# 监听所有网卡（适合局域网访问）
+agent-insight dashboard --host 0.0.0.0 --port 8080
+```
+
+**仪表板页面**：
+
+| 页面 | 路径 | 说明 |
+|------|------|------|
+| 事件流 | `#/events` | 实时滚动事件列表，WebSocket 推送新事件，支持按类型/工具/Session 过滤 |
+| 统计概览 | `#/dashboard` | 四指标卡片 + 工具使用饼图 + 事件类型柱状图 + 24h 趋势折线图 |
+| 调用瀑布图 | `#/trace?sid=xxx` | 按 Session 查看工具调用时序，红色标记拦截，灰色标记孤立 |
+| 会话列表 | `#/sessions` | 表格展示所有 Session，支持排序、分页、点击跳转 Trace |
+
+**实时推送原理**：dashboard 进程以 1s 间隔轮询 SQLite，检测到新事件后通过 WebSocket 广播给所有浏览器客户端。无需与 collect 进程通信，零额外依赖。
+
+**离线可用**：所有前端资源（HTML/CSS/JS + Chart.js）通过 go:embed 编译嵌入二进制，不依赖 CDN，内网环境可正常使用。
+
+**安全约束**：默认仅监听 localhost；WebSocket 校验 Origin header 防止跨站连接；API 返回的 tool_input/tool_output 已被截断脱敏。
 
 ### `agent-insight config`
 
@@ -500,5 +543,5 @@ agent-insight config set logging.level debug
 | 里程碑 | 功能 | 状态 |
 |--------|------|------|
 | M1 | 事件采集、调用链追踪、CLI 查询 | 已完成 |
-| M2 | 统计聚合引擎、Web 实时仪表板、会话聚合 | 规划中 |
+| M2 | 统计聚合引擎、Web 实时仪表板、会话聚合 | 已完成 |
 | M3 | 告警通知、数据导出、多项目隔离、基准测试 | 规划中 |
