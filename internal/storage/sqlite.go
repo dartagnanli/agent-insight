@@ -573,6 +573,24 @@ func (s *SQLite) CountSessions(ctx context.Context, f SessionFilter) (int, error
 	return count, nil
 }
 
+func (s *SQLite) DistinctSessions(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT DISTINCT session_id FROM hook_events ORDER BY session_id")
+	if err != nil {
+		return nil, fmt.Errorf("distinct sessions: %w", err)
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var sid string
+		if err := rows.Scan(&sid); err != nil {
+			return nil, fmt.Errorf("scan session_id: %w", err)
+		}
+		result = append(result, sid)
+	}
+	return result, rows.Err()
+}
+
 func (s *SQLite) DeleteBefore(ctx context.Context, before time.Time) (int64, error) {
 	ts := before.UTC().Format("2006-01-02T15:04:05.000Z")
 

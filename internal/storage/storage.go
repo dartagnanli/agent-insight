@@ -21,6 +21,7 @@ type Storage interface {
 	QuerySessionStats(ctx context.Context, filter SessionFilter) ([]SessionStatsRow, error)
 	ListSessions(ctx context.Context, filter SessionFilter) ([]SessionStatsRow, error)
 	CountSessions(ctx context.Context, filter SessionFilter) (int, error)
+	DistinctSessions(ctx context.Context) ([]string, error)
 	DeleteBefore(ctx context.Context, before time.Time) (int64, error)
 	Close() error
 }

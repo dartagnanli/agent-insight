@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dartagnanli/agent-insight/internal/session"
 	"github.com/dartagnanli/agent-insight/internal/stats"
 	"github.com/dartagnanli/agent-insight/internal/storage"
 	"github.com/dartagnanli/agent-insight/internal/trace"
@@ -75,6 +76,8 @@ func (h *APIHandler) HandleGetEvent(w http.ResponseWriter, r *http.Request) {
 func (h *APIHandler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	f := parseEventFilter(q)
+	// stats 需要全量事件，不受分页 limit 限制
+	f.Limit = 10000
 
 	events, err := h.storage.QueryEvents(r.Context(), f)
 	if err != nil {
@@ -167,6 +170,34 @@ func (h *APIHandler) HandleListSessions(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// session_stats 为空时从 hook_events 实时聚合
+	if len(sessions) == 0 {
+		sessionIDs, err := h.storage.DistinctSessions(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		agg := session.NewAggregator(h.storage)
+		for _, sid := range sessionIDs {
+			sid := sid
+			evts, err := h.storage.QueryEvents(r.Context(), storage.EventFilter{SessionID: &sid, Limit: 10000, SortOrder: "asc"})
+			if err != nil || len(evts) == 0 {
+				continue
+			}
+			_ = agg.AggregateFromEvents(r.Context(), evts)
+		}
+		sessions, err = h.storage.ListSessions(r.Context(), f)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		total, err = h.storage.CountSessions(r.Context(), f)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{

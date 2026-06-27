@@ -108,17 +108,14 @@ func (a *Aggregator) AggregateFromEvents(ctx context.Context, events []*event.Ho
 
 // AggregateAllSessions 聚合所有未聚合的 session（用于启动时补全）
 func (a *Aggregator) AggregateAllSessions(ctx context.Context, store storage.Storage) error {
-	// 查询所有 session
-	filter := storage.SessionFilter{Limit: 1000}
-	sessions, err := store.ListSessions(ctx, filter)
+	sessionIDs, err := store.DistinctSessions(ctx)
 	if err != nil {
-		return fmt.Errorf("list sessions: %w", err)
+		return fmt.Errorf("distinct sessions: %w", err)
 	}
 
-	for _, sm := range sessions {
-		// 查询该 session 的所有事件
-		sid := sm.SessionID
-		evtFilter := storage.EventFilter{SessionID: &sid, Limit: 10000}
+	for _, sid := range sessionIDs {
+		sid := sid
+		evtFilter := storage.EventFilter{SessionID: &sid, Limit: 10000, SortOrder: "asc"}
 		events, err := store.QueryEvents(ctx, evtFilter)
 		if err != nil {
 			slog.Warn("failed to query events for session", "session_id", sid, "error", err)
