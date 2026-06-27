@@ -266,30 +266,60 @@ tr:hover td { background: var(--surface-hover); }
 }
 .trace-meta strong { color: var(--text); }
 
-/* 瀑布图行布局 */
+.trace-waterfall { padding: 0; overflow: hidden; }
+
+/* 刻度行 */
+.trace-ruler-row {
+    display: flex;
+    height: 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.trace-label-col {
+    width: 180px;
+    min-width: 180px;
+    flex-shrink: 0;
+    padding: 6px 10px;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+}
+
+.trace-bar-col {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.trace-ruler {
+    position: absolute;
+    inset: 0;
+}
+
+.trace-ruler span {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 28px;
+    white-space: nowrap;
+}
+
+/* 瀑布行 */
 .trace-row {
     display: flex;
     align-items: center;
-    padding: 0 12px;
-    height: 32px;
+    height: 30px;
     border-bottom: 1px solid var(--border);
 }
 
 .trace-row:hover { background: var(--surface-hover); }
 
-.trace-label-col {
-    width: 200px;
-    min-width: 200px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding-right: 12px;
-}
-
 .trace-tool-name {
     font-size: 12px;
     font-weight: 600;
     color: var(--text);
+    display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -301,60 +331,19 @@ tr:hover td { background: var(--surface-hover); }
     white-space: nowrap;
 }
 
-.trace-bar-col {
-    flex: 1;
-    position: relative;
-    height: 100%;
-}
-
-.trace-ruler-row {
-    display: flex;
-    height: 24px;
-    border-bottom: 1px solid var(--border);
-}
-
-.trace-ruler-row .trace-label-col { }
-
-.trace-ruler-row .trace-bar-col {
-    position: relative;
-}
-
-.trace-ruler {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-}
-
-.trace-ruler span {
-    position: absolute;
-    transform: translateX(-50%);
-    font-size: 10px;
-    color: var(--text-muted);
-    line-height: 24px;
-}
-
 /* 瀑布条 */
 .trace-bar {
     position: absolute;
     top: 6px;
-    height: 20px;
+    height: 18px;
     border-radius: 3px;
     min-width: 2px;
 }
 
-.trace-bar.tool {
-    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-}
-
-.trace-bar.blocked {
-    background: linear-gradient(90deg, var(--danger), #dc2626);
-}
-
-.trace-bar.orphan {
-    background: linear-gradient(90deg, var(--warning), #d97706);
-}
+.trace-bar.tool { background: var(--accent); opacity: 0.85; }
+.trace-bar:hover.tool { opacity: 1; }
+.trace-bar.blocked { background: var(--danger); opacity: 0.9; }
+.trace-bar.orphan { background: var(--warning); opacity: 0.9; }
 
 /* 事件标记点 */
 .trace-dot {
@@ -364,10 +353,11 @@ tr:hover td { background: var(--surface-hover); }
     height: 8px;
     border-radius: 50%;
     transform: translate(-50%, -50%);
+    border: 2px solid;
 }
 
-.trace-dot.start { background: var(--success); }
-.trace-dot.stop { background: var(--danger); }
+.trace-dot.start { background: var(--success); border-color: var(--success); }
+.trace-dot.stop { background: var(--danger); border-color: var(--danger); }
 
 /* 分页 */
 .pagination {
