@@ -8,7 +8,7 @@ const WS = {
 
     connect() {
         const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        WS.url = `${proto}//${location.host}/api/ws`;
+        WS.url = `${proto}//${location.host}/api/v1/ws/events`;
 
         if (WS.conn) {
             WS.conn.close();

@@ -149,8 +149,8 @@ const DashboardPage = {
                 <td style="color:var(--accent);font-weight:500">${escapeHTML(name)}</td>
                 <td>${d.count}</td>
                 <td style="color:${d.blocked > 0 ? 'var(--danger)' : 'var(--text)'}">${d.blocked}</td>
-                <td>${d.avg_duration_ms != null ? d.avg_duration_ms.toFixed(1) + 'ms' : '-'}</td>
-                <td>${d.p99_duration_ms != null ? d.p99_duration_ms.toFixed(1) + 'ms' : '-'}</td>
+                <td>${formatMs(d.avg_duration_ms)}</td>
+                <td>${formatMs(d.p99_duration_ms)}</td>
             </tr>`).join('')}</tbody>
         </table>`;
     },

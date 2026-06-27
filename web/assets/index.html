@@ -8,14 +8,15 @@
 </head>
 <body>
     <nav id="navbar">
-        <div class="nav-brand">Agent Insight</div>
+        <div class="nav-brand">Agent Insight <span id="nav-version" style="color:var(--text-muted);font-size:12px;font-weight:400"></span></div>
         <div class="nav-links">
             <a href="#/dashboard" class="nav-link" data-page="dashboard">仪表板</a>
             <a href="#/events" class="nav-link" data-page="events">事件流</a>
-            <a href="#/sessions" class="nav-link" data-page="sessions">会话列表</a>
+            <a href="#/trace" class="nav-link" data-page="trace">调用链</a>
+            <a href="#/sessions" class="nav-link" data-page="sessions">会话</a>
         </div>
     </nav>
-    <div id="app"></div>
+    <main id="app"></main>
     <script src="/js/vendor/chart.umd.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/ws.js"></script>

@@ -108,7 +108,7 @@ const EventsPage = {
                               evt.event_type === 'Stop' || evt.event_type === 'SubagentStop' ? 'stop' : '';
             const blocked = evt.blocked ? '<span style="color:var(--danger);font-weight:600;margin-left:8px">[已拦截]</span>' : '';
             const toolName = evt.tool_name ? `<span style="color:var(--accent);margin-left:8px">${escapeHTML(evt.tool_name)}</span>` : '';
-            const duration = evt.hook_duration_ms ? `<span style="color:var(--text-muted);margin-left:8px">${evt.hook_duration_ms}ms</span>` : '';
+            const duration = (evt.hook_duration_ms || evt.collect_duration_ms) ? `<span style="color:var(--text-muted);margin-left:8px">${formatMs(evt.hook_duration_ms || evt.collect_duration_ms)}</span>` : '';
 
             return `<div class="event-row" data-event-id="${escapeHTML(evt.event_id)}">
                 <div class="event-header">
